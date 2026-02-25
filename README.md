@@ -10,9 +10,27 @@ Comprehensive security scanning with **SAST** (Static Application Security Testi
 - Supports multiple programming languages
 
 ### DAST (Runtime Testing)
-- Playwright-based dynamic security testing
+#### Playwright-based DAST
 - Manual authentication with automatic JWT/cookie capture
 - OWASP Top 10 vulnerability detection:
+  - XSS (Cross-Site Scripting)
+  - SQL Injection
+  - Command Injection
+  - Path Traversal
+  - Open Redirect
+  - CSRF
+  - Security Headers
+  - Authentication/Authorization
+  - Sensitive Data Exposure
+  - CORS Misconfiguration
+
+
+#### OWASP ZAP Integration
+- Full-featured web application security scanner
+- Spider and AJAX Spider for discovery
+- Active and passive vulnerability scanning
+- API scanning (OpenAPI/Swagger support)
+- Multiple report formats (HTML, XML, JSON, Markdown)
   - XSS (Cross-Site Scripting)
   - SQL Injection
   - Command Injection
@@ -190,6 +208,9 @@ When running `fetch-repos.sh`:
 | `./scripts/run-dast.sh clear` | Clear saved auth |
 | `npm run dast:report` | Open DAST HTML report |
 | `npm run dast:headed` | Run DAST with visible browser |
+| `./scripts/run-zap.sh quick` | Run ZAP quick scan |
+| `./scripts/run-zap.sh full` | Run ZAP full scan |
+| `./scripts/run-zap.sh api` | Run ZAP API scan |
 
 ## SAST Tool Alternatives
 
@@ -199,7 +220,10 @@ When running `fetch-repos.sh`:
 SAST_TOOL=semgrep
 ```
 
-## DAST Test Categories
+## DAST Scanners
+
+### 1. Playwright DAST (Custom Tests)
+Custom security tests built with Playwright for targeted vulnerability detection.
 
 | Test | Description |
 |------|-------------|
@@ -223,7 +247,63 @@ SAST_TOOL=semgrep
 | **Deserialization** | Java/PHP/Python deserialization |
 | **Business Logic** | Price manipulation, race conditions |
 
+### 2. OWASP ZAP
+Industry-standard web application security scanner.
+
+```bash
+# Start ZAP docker container
+docker-compose up -d zap
+
+# Wait for ZAP to be ready (takes ~30 seconds)
+./scripts/run-zap.sh status
+
+# Run scans
+./scripts/run-zap.sh quick     # Spider + Active Scan (fast)
+./scripts/run-zap.sh full      # Spider + AJAX Spider + Active Scan (thorough)
+./scripts/run-zap.sh baseline  # Passive scan only (safe for CI/CD)
+./scripts/run-zap.sh api       # API scan with OpenAPI/Swagger
+
+# Configure target
+export TARGET_ENDPOINT=https://your-app.com
+export ZAP_FORMAT=json         # html, xml, json, or md
+./scripts/run-zap.sh quick
+```
+
+**ZAP Commands:**
+
+| Command | Description |
+|---------|-------------|
+| `quick` | Spider + Active scan (recommended) |
+| `full` | Spider + AJAX Spider + Active scan |
+| `baseline` | Passive scan only (no attacks) |
+| `api` | OpenAPI/Swagger API scanning |
+| `report` | Generate report from existing session |
+| `status` | Check if ZAP is running |
+
+**ZAP Environment Variables:**
+
+```bash
+TARGET_ENDPOINT=https://your-app.com    # Target URL
+ZAP_API_URL=http://localhost:8080       # ZAP API endpoint
+ZAP_FORMAT=html                         # Report format
+ZAP_OPENAPI_URL=http://app/api-docs     # OpenAPI spec URL
+```
+
 ## Reports
 
 - **SAST**: View in SonarQube at http://localhost:9000
-- **DAST**: `reports/dast-report/index.html` or `reports/dast-results.json`
+- **Playwright DAST**: `reports/dast-report/index.html` or `reports/dast-results.json`
+- **ZAP DAST**: `reports/zap/zap-report-YYYYMMDD_HHMMSS.html`
+
+### Report Comparison
+
+| Feature | Playwright DAST | OWASP ZAP |
+|---------|-----------------|-----------|
+| Speed | Fast | Medium |
+| Coverage | Targeted (19 categories) | Comprehensive |
+| Customization | Full code control | Extensive addons |
+| CI/CD | Easy | Baseline mode ideal |
+| Authentication | Built-in manual auth | Script-based |
+| API Scanning | Basic | Excellent (OpenAPI) |
+
+**Recommendation**: Use both scanners for comprehensive coverage. Playwright DAST for targeted business logic tests, ZAP for broad vulnerability discovery.
