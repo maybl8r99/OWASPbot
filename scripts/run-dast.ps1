@@ -2,6 +2,11 @@
 #Requires -Version 5.1
 $ErrorActionPreference = "Stop"
 
+# Store user-provided values before loading .env (env vars should override .env)
+$_USER_TARGET_ENDPOINT = $env:TARGET_ENDPOINT
+$_USER_HEADLESS = $env:HEADLESS
+$_USER_SKIP_AUTH = $env:SKIP_AUTH
+
 if (Test-Path .env) {
     Get-Content .env | ForEach-Object {
         if ($_ -match "^([^#][^=]+)=(.*)$") {
@@ -9,6 +14,11 @@ if (Test-Path .env) {
         }
     }
 }
+
+# Restore user-provided values if they were set (override .env)
+if ($_USER_TARGET_ENDPOINT) { $env:TARGET_ENDPOINT = $_USER_TARGET_ENDPOINT }
+if ($_USER_HEADLESS) { $env:HEADLESS = $_USER_HEADLESS }
+if ($_USER_SKIP_AUTH) { $env:SKIP_AUTH = $_USER_SKIP_AUTH }
 
 $TARGET_ENDPOINT = if ($env:TARGET_ENDPOINT) { $env:TARGET_ENDPOINT } else { "http://localhost:3000" }
 $HEADLESS = if ($env:HEADLESS) { $env:HEADLESS } else { "true" }
@@ -53,11 +63,6 @@ function Invoke-Auth {
     Write-Host "=== Manual Authentication ===" -ForegroundColor Cyan
     Write-Host "Target: $TARGET_ENDPOINT"
     Write-Host ""
-    Write-Host "A browser window will open. Please:"
-    Write-Host "  1. Log in to the application"
-    Write-Host "  2. Complete any MFA if required"
-    Write-Host "  3. Press Enter in this terminal when done"
-    Write-Host ""
     
     if (-not (Test-Path node_modules)) {
         Write-Host "Installing dependencies..."
@@ -65,8 +70,7 @@ function Invoke-Auth {
         npx playwright install chromium
     }
     
-    $env:HEADLESS = "false"
-    npx playwright test --project=setup dast/auth.setup.ts
+    node scripts/auth-setup.mjs
 }
 
 function Invoke-Scan {

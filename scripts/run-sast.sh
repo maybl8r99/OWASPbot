@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e
 
+set -a
 source .env 2>/dev/null || true
+set +a
 
 SAST_TOOL=${SAST_TOOL:-sonarqube}
 SOURCE_CODE_PATH=${SOURCE_CODE_PATH:-./source_code}
