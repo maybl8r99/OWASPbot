@@ -1,0 +1,9 @@
+source_code/
+dast/.auth/
+.env
+reports/
+node_modules/
+dist/
+test-results/
+playwright-report/
+playwright/.cache/
