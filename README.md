@@ -60,9 +60,18 @@ cp .env.example .env
 # Edit .env with your settings
 ```
 
-### 2. SAST (Code Scanning)
+### 2. ZAP Setup (Optional DAST Scanner)
 ```bash
-# Start SonarQube
+# Install and start OWASP ZAP
+./scripts/install-zap.sh        # One-time setup
+# or on Windows: .\scripts\install-zap.ps1
+
+# ZAP is now running at http://localhost:8080
+```
+
+### 3. SAST (Code Scanning)
+```bash
+# Start SonarQube (if not using install-tools.sh)
 docker-compose up -d
 
 # Wait for startup, then open http://localhost:9000
@@ -198,7 +207,9 @@ When running `fetch-repos.sh`:
 
 | Command | Description |
 |---------|-------------|
-| `docker-compose up -d` | Start SonarQube |
+| `docker-compose up -d` | Start SonarQube and ZAP |
+| `./scripts/install-zap.sh` | Install/setup ZAP |
+| `./scripts/install-tools.sh` | Install all prerequisites |
 | `docker-compose down` | Stop containers |
 | `./scripts/fetch-repos.sh` | Clone/pull repositories |
 | `./scripts/run-sast.sh` | Run SAST (code) scan |
@@ -251,10 +262,13 @@ Custom security tests built with Playwright for targeted vulnerability detection
 Industry-standard web application security scanner.
 
 ```bash
-# Start ZAP docker container
+# Install and start ZAP (one-time setup)
+./scripts/install-zap.sh
+
+# Or use Docker Compose directly
 docker-compose up -d zap
 
-# Wait for ZAP to be ready (takes ~30 seconds)
+# Wait for ZAP to be ready
 ./scripts/run-zap.sh status
 
 # Run scans
