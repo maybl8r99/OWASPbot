@@ -31,26 +31,7 @@ Comprehensive security scanning with **SAST** (Static Application Security Testi
 - Active and passive vulnerability scanning
 - API scanning (OpenAPI/Swagger support)
 - Multiple report formats (HTML, XML, JSON, Markdown)
-  - XSS (Cross-Site Scripting)
-  - SQL Injection
-  - Command Injection
-  - Path Traversal
-  - Open Redirect
-  - CSRF
-  - Security Headers
-  - Authentication/Authorization
-  - Sensitive Data Exposure
-  - CORS Misconfiguration
-- Additional vulnerability detection:
-  - NoSQL Injection
-  - SSRF (Server-Side Request Forgery)
-  - XXE (XML External Entity)
-  - File Upload vulnerabilities
-  - HTTP Method security
-  - Cache vulnerabilities
-  - JWT security issues
-  - Insecure Deserialization
-  - Business Logic flaws
+- Automatic localhost → host.docker.internal conversion
 
 ## Quick Start
 
@@ -82,7 +63,7 @@ docker-compose up -d
 ./scripts/run-sast.sh       # Run code scan
 ```
 
-### 3. DAST (Runtime Scanning)
+### 4. DAST (Runtime Scanning)
 
 **For authenticated applications:**
 ```bash
@@ -166,7 +147,10 @@ SKIP_AUTH=false                       # Skip auth for public apps
 ├── scripts/
 │   ├── fetch-repos.sh      # Clone repositories
 │   ├── run-sast.sh         # Run SAST scan
-│   └── run-dast.sh         # Run DAST scan
+│   ├── run-dast.sh         # Run Playwright DAST scan
+│   ├── run-zap.sh          # Run ZAP DAST scan
+│   ├── install-zap.sh      # Install ZAP
+│   └── install-tools.sh    # Install prerequisites
 ├── source_code/            # Cloned repos (gitignored)
 └── reports/
     ├── dast-report/        # DAST HTML report
@@ -301,6 +285,23 @@ TARGET_ENDPOINT=https://your-app.com    # Target URL
 ZAP_API_URL=http://localhost:8080       # ZAP API endpoint
 ZAP_FORMAT=html                         # Report format
 ZAP_OPENAPI_URL=http://app/api-docs     # OpenAPI spec URL
+```
+
+**Note on Docker Networking:**
+
+When using `localhost` as the target, the scripts automatically convert it to `host.docker.internal` so ZAP (running inside Docker) can reach your application on the host machine:
+
+```bash
+# You type:
+TARGET_ENDPOINT=http://localhost:3000 ./scripts/run-zap.sh quick
+
+# Script converts to:
+# http://host.docker.internal:3000 (for ZAP container)
+```
+
+If your app doesn't respond to `host.docker.internal`, use your machine's actual IP address:
+```bash
+TARGET_ENDPOINT=http://192.168.1.42:3000 ./scripts/run-zap.sh quick
 ```
 
 ## Reports
