@@ -87,8 +87,17 @@ function Invoke-Spider {
     Write-Host "Target: $TARGET_ENDPOINT"
     
     $encodedUrl = [uri]::EscapeDataString($TARGET_ENDPOINT)
-    $response = Invoke-RestMethod -Uri "$ZAP_API_URL/JSON/spider/action/scan/?url=$encodedUrl&maxChildren=10&recurse=true" -Method Get
-    $scanId = $response.scan
+    $uri = "$ZAP_API_URL/JSON/spider/action/scan/?url=$encodedUrl&maxChildren=10&recurse=true"
+    Write-Host "  Calling: $uri"
+    
+    try {
+        $response = Invoke-RestMethod -Uri $uri -Method Get -ErrorAction Stop
+        Write-Host "  Response: $($response | ConvertTo-Json -Compress)"
+        $scanId = $response.scan
+    } catch {
+        Write-Host "  Error: $_" -ForegroundColor Red
+        $scanId = $null
+    }
     
     if (-not $scanId) {
         Write-Host "✗ Failed to start spider" -ForegroundColor Red
@@ -137,8 +146,17 @@ function Invoke-ActiveScan {
     Write-Host "Target: $TARGET_ENDPOINT"
     
     $encodedUrl = [uri]::EscapeDataString($TARGET_ENDPOINT)
-    $response = Invoke-RestMethod -Uri "$ZAP_API_URL/JSON/ascan/action/scan/?url=$encodedUrl&recurse=true&inScopeOnly=false" -Method Get
-    $scanId = $response.scan
+    $uri = "$ZAP_API_URL/JSON/ascan/action/scan/?url=$encodedUrl&recurse=true&inScopeOnly=false"
+    Write-Host "  Calling: $uri"
+    
+    try {
+        $response = Invoke-RestMethod -Uri $uri -Method Get -ErrorAction Stop
+        Write-Host "  Response: $($response | ConvertTo-Json -Compress)"
+        $scanId = $response.scan
+    } catch {
+        Write-Host "  Error: $_" -ForegroundColor Red
+        $scanId = $null
+    }
     
     if (-not $scanId) {
         Write-Host "✗ Failed to start active scan" -ForegroundColor Red

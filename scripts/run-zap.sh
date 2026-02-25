@@ -81,12 +81,19 @@ run_spider() {
     echo "=== Starting Spider Scan ==="
     echo "Target: $TARGET_ENDPOINT"
     
+    # URL encode the target
+    ENCODED_URL=$(echo "$TARGET_ENDPOINT" | sed 's/:/%3A/g; s/\//%2F/g')
+    
     # Start spider
-    SPIDER_RESPONSE=$(curl -s "$ZAP_API_URL/JSON/spider/action/scan/?url=$TARGET_ENDPOINT&maxChildren=10&recurse=true")
-    SCAN_ID=$(echo "$SPIDER_RESPONSE" | grep -o '"scan":[0-9]*' | cut -d':' -f2)
+    SPIDER_RESPONSE=$(curl -s "$ZAP_API_URL/JSON/spider/action/scan/?url=$ENCODED_URL&maxChildren=10&recurse=true")
+    echo "  Response: $SPIDER_RESPONSE"
+    
+    # Extract scan ID (handle both "scan":"1" and "scan":1 formats)
+    SCAN_ID=$(echo "$SPIDER_RESPONSE" | grep -o '"scan" *: *"*[0-9]*"*' | grep -o '[0-9]*')
     
     if [ -z "$SCAN_ID" ]; then
         echo "✗ Failed to start spider"
+        echo "  Full response: $SPIDER_RESPONSE"
         return 1
     fi
     
@@ -136,12 +143,19 @@ run_active_scan() {
     echo "=== Starting Active Scan ==="
     echo "Target: $TARGET_ENDPOINT"
     
+    # URL encode the target
+    ENCODED_URL=$(echo "$TARGET_ENDPOINT" | sed 's/:/%3A/g; s/\//%2F/g')
+    
     # Start active scan
-    SCAN_RESPONSE=$(curl -s "$ZAP_API_URL/JSON/ascan/action/scan/?url=$TARGET_ENDPOINT&recurse=true&inScopeOnly=false")
-    SCAN_ID=$(echo "$SCAN_RESPONSE" | grep -o '"scan":[0-9]*' | cut -d':' -f2)
+    SCAN_RESPONSE=$(curl -s "$ZAP_API_URL/JSON/ascan/action/scan/?url=$ENCODED_URL&recurse=true&inScopeOnly=false")
+    echo "  Response: $SCAN_RESPONSE"
+    
+    # Extract scan ID (handle both formats)
+    SCAN_ID=$(echo "$SCAN_RESPONSE" | grep -o '"scan" *: *"*[0-9]*"*' | grep -o '[0-9]*')
     
     if [ -z "$SCAN_ID" ]; then
         echo "✗ Failed to start active scan"
+        echo "  Full response: $SCAN_RESPONSE"
         return 1
     fi
     
