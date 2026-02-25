@@ -18,6 +18,17 @@ set +a
 # Apply defaults
 TARGET_ENDPOINT=${TARGET_ENDPOINT:-http://localhost:3000}
 ZAP_API_URL=${ZAP_API_URL:-http://localhost:8080}
+
+# Convert localhost to host.docker.internal for ZAP container access
+# This allows ZAP (in Docker) to reach the target on the host machine
+convert_localhost_for_docker() {
+    local url="$1"
+    # Replace localhost or 127.0.0.1 with host.docker.internal
+    echo "$url" | sed 's/localhost/host.docker.internal/g; s/127\.0\.0\.1/host.docker.internal/g'
+}
+
+# The URL we send to ZAP API needs to be accessible from within the container
+TARGET_ENDPOINT_FOR_ZAP=$(convert_localhost_for_docker "$TARGET_ENDPOINT")
 ZAP_FORMAT=${ZAP_FORMAT:-html}
 ZAP_REPORT_DIR=${ZAP_REPORT_DIR:-./reports/zap}
 
@@ -79,10 +90,11 @@ wait_for_zap() {
 
 run_spider() {
     echo "=== Starting Spider Scan ==="
-    echo "Target: $TARGET_ENDPOINT"
+    echo "Original Target: $TARGET_ENDPOINT"
+    echo "ZAP Container Target: $TARGET_ENDPOINT_FOR_ZAP"
     
     # URL encode the target
-    ENCODED_URL=$(echo "$TARGET_ENDPOINT" | sed 's/:/%3A/g; s/\//%2F/g')
+    ENCODED_URL=$(echo "$TARGET_ENDPOINT_FOR_ZAP" | sed 's/:/%3A/g; s/\//%2F/g')
     
     # Start spider
     SPIDER_RESPONSE=$(curl -s "$ZAP_API_URL/JSON/spider/action/scan/?url=$ENCODED_URL&maxChildren=10&recurse=true")
@@ -141,10 +153,11 @@ run_ajax_spider() {
 
 run_active_scan() {
     echo "=== Starting Active Scan ==="
-    echo "Target: $TARGET_ENDPOINT"
+    echo "Original Target: $TARGET_ENDPOINT"
+    echo "ZAP Container Target: $TARGET_ENDPOINT_FOR_ZAP"
     
     # URL encode the target
-    ENCODED_URL=$(echo "$TARGET_ENDPOINT" | sed 's/:/%3A/g; s/\//%2F/g')
+    ENCODED_URL=$(echo "$TARGET_ENDPOINT_FOR_ZAP" | sed 's/:/%3A/g; s/\//%2F/g')
     
     # Start active scan
     SCAN_RESPONSE=$(curl -s "$ZAP_API_URL/JSON/ascan/action/scan/?url=$ENCODED_URL&recurse=true&inScopeOnly=false")
@@ -176,7 +189,8 @@ run_active_scan() {
 
 run_baseline_scan() {
     echo "=== Starting Baseline Scan (Passive) ==="
-    echo "Target: $TARGET_ENDPOINT"
+    echo "Original Target: $TARGET_ENDPOINT"
+    echo "ZAP Container Target: $TARGET_ENDPOINT_FOR_ZAP"
     
     # Spider only (no active scanning)
     run_spider
@@ -187,6 +201,9 @@ run_baseline_scan() {
 run_api_scan() {
     echo "=== Starting API Scan ==="
     
+    # Convert OpenAPI URL if needed
+    ZAP_OPENAPI_URL_FOR_ZAP=$(convert_localhost_for_docker "${ZAP_OPENAPI_URL:-}")
+    
     if [ -z "$ZAP_OPENAPI_URL" ]; then
         echo "Error: ZAP_OPENAPI_URL not set"
     echo "  Set it in .env or environment, e.g.:"
@@ -194,11 +211,13 @@ run_api_scan() {
         return 1
     fi
     
-    echo "OpenAPI URL: $ZAP_OPENAPI_URL"
-    echo "Target: $TARGET_ENDPOINT"
+    echo "Original OpenAPI URL: $ZAP_OPENAPI_URL"
+    echo "ZAP Container URL: $ZAP_OPENAPI_URL_FOR_ZAP"
+    echo "Target: $TARGET_ENDPOINT_FOR_ZAP"
     
-    # Import OpenAPI
-    IMPORT_RESPONSE=$(curl -s "$ZAP_API_URL/JSON/openapi/action/importUrl/?url=$ZAP_OPENAPI_URL")
+    # Import OpenAPI (use converted URL)
+    ENCODED_OPENAPI_URL=$(echo "$ZAP_OPENAPI_URL_FOR_ZAP" | sed 's/:/%3A/g; s/\//%2F/g')
+    IMPORT_RESPONSE=$(curl -s "$ZAP_API_URL/JSON/openapi/action/importUrl/?url=$ENCODED_OPENAPI_URL")
     
     if echo "$IMPORT_RESPONSE" | grep -q '"result":"OK"'; then
         echo "✓ OpenAPI imported successfully"

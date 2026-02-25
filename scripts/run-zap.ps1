@@ -22,6 +22,16 @@ if ($_USER_ZAP_FORMAT) { $env:ZAP_FORMAT = $_USER_ZAP_FORMAT }
 
 $TARGET_ENDPOINT = if ($env:TARGET_ENDPOINT) { $env:TARGET_ENDPOINT } else { "http://localhost:3000" }
 $ZAP_API_URL = if ($env:ZAP_API_URL) { $env:ZAP_API_URL } else { "http://localhost:8080" }
+
+# Convert localhost to host.docker.internal for ZAP container access
+function Convert-LocalhostForDocker {
+    param([string]$Url)
+    # Replace localhost or 127.0.0.1 with host.docker.internal
+    return $Url -replace "localhost", "host.docker.internal" -replace "127\.0\.0\.1", "host.docker.internal"
+}
+
+# The URL we send to ZAP API needs to be accessible from within the container
+$TARGET_ENDPOINT_FOR_ZAP = Convert-LocalhostForDocker $TARGET_ENDPOINT
 $ZAP_FORMAT = if ($env:ZAP_FORMAT) { $env:ZAP_FORMAT } else { "html" }
 $ZAP_REPORT_DIR = if ($env:ZAP_REPORT_DIR) { $env:ZAP_REPORT_DIR } else { "./reports/zap" }
 
@@ -84,9 +94,10 @@ function Wait-ForZap {
 
 function Invoke-Spider {
     Write-Host "=== Starting Spider Scan ===" -ForegroundColor Cyan
-    Write-Host "Target: $TARGET_ENDPOINT"
+    Write-Host "Original Target: $TARGET_ENDPOINT"
+    Write-Host "ZAP Container Target: $TARGET_ENDPOINT_FOR_ZAP"
     
-    $encodedUrl = [uri]::EscapeDataString($TARGET_ENDPOINT)
+    $encodedUrl = [uri]::EscapeDataString($TARGET_ENDPOINT_FOR_ZAP)
     $uri = "$ZAP_API_URL/JSON/spider/action/scan/?url=$encodedUrl&maxChildren=10&recurse=true"
     Write-Host "  Calling: $uri"
     
@@ -143,9 +154,10 @@ function Invoke-AjaxSpider {
 
 function Invoke-ActiveScan {
     Write-Host "=== Starting Active Scan ===" -ForegroundColor Cyan
-    Write-Host "Target: $TARGET_ENDPOINT"
+    Write-Host "Original Target: $TARGET_ENDPOINT"
+    Write-Host "ZAP Container Target: $TARGET_ENDPOINT_FOR_ZAP"
     
-    $encodedUrl = [uri]::EscapeDataString($TARGET_ENDPOINT)
+    $encodedUrl = [uri]::EscapeDataString($TARGET_ENDPOINT_FOR_ZAP)
     $uri = "$ZAP_API_URL/JSON/ascan/action/scan/?url=$encodedUrl&recurse=true&inScopeOnly=false"
     Write-Host "  Calling: $uri"
     
@@ -180,7 +192,8 @@ function Invoke-ActiveScan {
 
 function Invoke-BaselineScan {
     Write-Host "=== Starting Baseline Scan (Passive) ===" -ForegroundColor Cyan
-    Write-Host "Target: $TARGET_ENDPOINT"
+    Write-Host "Original Target: $TARGET_ENDPOINT"
+    Write-Host "ZAP Container Target: $TARGET_ENDPOINT_FOR_ZAP"
     
     Invoke-Spider
     Write-Host "✓ Baseline scan complete (passive findings only)" -ForegroundColor Green
@@ -189,6 +202,9 @@ function Invoke-BaselineScan {
 function Invoke-ApiScan {
     Write-Host "=== Starting API Scan ===" -ForegroundColor Cyan
     
+    # Convert OpenAPI URL if needed
+    $ZAP_OPENAPI_URL_FOR_ZAP = Convert-LocalhostForDocker $env:ZAP_OPENAPI_URL
+    
     if (-not $env:ZAP_OPENAPI_URL) {
         Write-Host "Error: ZAP_OPENAPI_URL not set" -ForegroundColor Red
         Write-Host "  Set it in .env or environment, e.g.:"
@@ -196,10 +212,11 @@ function Invoke-ApiScan {
         return $false
     }
     
-    Write-Host "OpenAPI URL: $($env:ZAP_OPENAPI_URL)"
-    Write-Host "Target: $TARGET_ENDPOINT"
+    Write-Host "Original OpenAPI URL: $($env:ZAP_OPENAPI_URL)"
+    Write-Host "ZAP Container URL: $ZAP_OPENAPI_URL_FOR_ZAP"
+    Write-Host "Target: $TARGET_ENDPOINT_FOR_ZAP"
     
-    $encodedOpenApiUrl = [uri]::EscapeDataString($env:ZAP_OPENAPI_URL)
+    $encodedOpenApiUrl = [uri]::EscapeDataString($ZAP_OPENAPI_URL_FOR_ZAP)
     $importResponse = Invoke-RestMethod -Uri "$ZAP_API_URL/JSON/openapi/action/importUrl/?url=$encodedOpenApiUrl" -Method Get
     
     if ($importResponse.result -eq "OK") {
