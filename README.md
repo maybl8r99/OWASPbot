@@ -23,6 +23,16 @@ Comprehensive security scanning with **SAST** (Static Application Security Testi
   - Authentication/Authorization
   - Sensitive Data Exposure
   - CORS Misconfiguration
+- Additional vulnerability detection:
+  - NoSQL Injection
+  - SSRF (Server-Side Request Forgery)
+  - XXE (XML External Entity)
+  - File Upload vulnerabilities
+  - HTTP Method security
+  - Cache vulnerabilities
+  - JWT security issues
+  - Insecure Deserialization
+  - Business Logic flaws
 
 ## Quick Start
 
@@ -114,7 +124,16 @@ SKIP_AUTH=false                       # Skip auth for public apps
 │   │   ├── 07-auth.spec.ts
 │   │   ├── 08-sensitive-data.spec.ts
 │   │   ├── 09-csrf.spec.ts
-│   │   └── 10-cors.spec.ts
+│   │   ├── 10-cors.spec.ts
+│   │   ├── 11-nosql-injection.spec.ts
+│   │   ├── 12-ssrf.spec.ts
+│   │   ├── 13-xxe.spec.ts
+│   │   ├── 14-file-upload.spec.ts
+│   │   ├── 15-http-methods.spec.ts
+│   │   ├── 16-cache-vulnerabilities.spec.ts
+│   │   ├── 17-jwt-vulnerabilities.spec.ts
+│   │   ├── 18-insecure-deserialization.spec.ts
+│   │   └── 19-business-logic.spec.ts
 │   ├── fixtures/           # Test payloads
 │   └── utils/              # Helper functions
 ├── scripts/
@@ -194,6 +213,15 @@ SAST_TOOL=semgrep
 | Sensitive Data | Exposed credentials, PII |
 | CSRF | Cross-site request forgery |
 | CORS | Cross-origin misconfigurations |
+| **NoSQL Injection** | MongoDB, CouchDB injection |
+| **SSRF** | Server-Side Request Forgery |
+| **XXE** | XML External Entity injection |
+| **File Upload** | Unrestricted uploads, web shells |
+| **HTTP Methods** | Dangerous methods, XST |
+| **Cache** | Cache poisoning, deception |
+| **JWT** | Weak signatures, algorithm confusion |
+| **Deserialization** | Java/PHP/Python deserialization |
+| **Business Logic** | Price manipulation, race conditions |
 
 ## Reports
 
